@@ -17,11 +17,11 @@ specifiers:
   '@vueuse/core': ^9.6.0
   autoprefixer: ^10.4.13
   axios: ^1.2.0
-  bignumber.js: ^9.1.1
   blueimp-md5: ^2.19.0
   commitizen: ^4.2.5
   core-js: ^3.26.1
   date-fns: ^2.29.3
+  decimal.js: ^10.4.3
   dotenv: ^16.0.3
   echarts: ^5.4.0
   element-resize-detector: ^1.2.4
@@ -77,9 +77,9 @@ dependencies:
   '@vueup/vue-quill': 1.0.0_vue@3.2.45
   '@vueuse/core': 9.6.0_vue@3.2.45
   axios: 1.2.0
-  bignumber.js: 9.1.1
   blueimp-md5: 2.19.0
   date-fns: 2.29.3
+  decimal.js: 10.4.3
   echarts: 5.4.0
   element-resize-detector: 1.2.4
   lodash: 4.17.21
@@ -1993,10 +1993,6 @@ packages:
     resolution: {integrity: sha512-xoLQD8gmmR32MeuBHgH0Tzd5PuSZx71ZsbhVxOCRbgktZEPe4SQy7s9Z50uPp0F/f7iw2XmkHN2xkgbMfckMDA==}
     dev: false
 
-  /bignumber.js/9.1.1:
-    resolution: {integrity: sha512-pHm4LsMJ6lzgNGVfZHjMoO8sdoRhOzOH4MLmY65Jg70bpxCKu5iOHNJyfF6OyvYw7t8Fpf35RuzUyqnQsj8Vig==}
-    dev: false
-
   /binary-extensions/2.2.0:
     resolution: {integrity: sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==}
     engines: {node: '>=8'}
@@ -2615,6 +2611,10 @@ packages:
     resolution: {integrity: sha512-z2S+W9X73hAUUki+N+9Za2lBlun89zigOyGrsax+KUQ6wKW4ZoWpEYBkGhQjwAjjDCkWxhY0VKEhk8wzY7F5cA==}
     engines: {node: '>=0.10.0'}
     dev: true
+
+  /decimal.js/10.4.3:
+    resolution: {integrity: sha512-VBBaLc1MgL5XpzgIP7ny5Z6Nx3UrRkIViUkPUdtl9aya5amy3De1gsUUSB1g3+3sExYNjCAsAznmukyxCb1GRA==}
+    dev: false
 
   /dedent/0.7.0:
     resolution: {integrity: sha512-Q6fKUPqnAHAyhiUgFU7BUzLiv0kd8saH9al7tnu5Q/okj6dnupxyTgFIBjVzJATdfIAm9NAsvXNzjaKa+bxVyA==}

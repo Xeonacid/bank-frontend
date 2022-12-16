@@ -15,13 +15,13 @@
 </template>
 <script lang="ts" setup>
   import { ref, onMounted } from 'vue';
-  import { getConsoleInfo } from '@/api/dashboard/console';
+  import { getBalanceInfo } from '@/api/user/balance';
 
   const loading = ref(true);
   const balance = ref<any>({});
 
   onMounted(async () => {
-    const data = await getConsoleInfo();
+    const data = await getBalanceInfo();
     balance.value = data.balance;
     loading.value = false;
   });

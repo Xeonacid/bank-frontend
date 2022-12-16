@@ -1,9 +1,9 @@
 import { http } from '@/utils/http/axios';
 
-//获取主控台信息
-export function getConsoleInfo() {
+//获取余额信息
+export function getBalanceInfo() {
   return http.request({
-    url: '/dashboard/console',
+    url: '/balance',
     method: 'get',
   });
 }
