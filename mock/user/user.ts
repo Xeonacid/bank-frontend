@@ -7,7 +7,7 @@ const token = Random.string('upper', 32, 32);
 
 const adminInfo = {
   userId: '1',
-  username: 'admin',
+  name: 'admin',
   realName: 'Admin',
   avatar: Random.image(),
   desc: 'manager',
@@ -23,7 +23,7 @@ const adminInfo = {
 
 export default [
   {
-    url: '/api/login',
+    url: '/login',
     timeout: 1000,
     method: 'post',
     response: () => {
@@ -31,7 +31,7 @@ export default [
     },
   },
   {
-    url: '/api/admin_info',
+    url: '/admin_info',
     timeout: 1000,
     method: 'get',
     response: () => {

@@ -16,8 +16,8 @@
           :model="formInline"
           :rules="rules"
         >
-          <n-form-item path="username">
-            <n-input v-model:value="formInline.username" placeholder="请输入姓名">
+          <n-form-item path="name">
+            <n-input v-model:value="formInline.name" placeholder="请输入姓名">
               <template #prefix>
                 <n-icon size="18" color="#808695">
                   <PersonOutline />
@@ -67,22 +67,22 @@
   import { PageEnum } from '@/enums/pageEnum';
   import { websiteConfig } from '@/config/website.config';
   interface FormState {
-    username: string;
+    name: string;
     password: string;
   }
 
   const formRef = ref();
-  const message = useMessage();
+  const resultMessage = useMessage();
   const loading = ref(false);
   const LOGIN_NAME = PageEnum.BASE_LOGIN_NAME;
 
   const formInline = reactive({
-    username: 'admin',
+    name: 'admin',
     password: '123456',
   });
 
   const rules: FormRules = {
-    username: { required: true, message: '请输入姓名', trigger: 'blur' },
+    name: { required: true, message: '请输入姓名', trigger: 'blur' },
     password: { required: true, message: '请输入密码', trigger: 'blur' },
   };
 
@@ -95,32 +95,32 @@
     e.preventDefault();
     formRef.value.validate(async (errors) => {
       if (!errors) {
-        const { username, password } = formInline;
-        message.loading('登录中...');
+        const { name, password } = formInline;
+        resultMessage.loading('登录中...');
         loading.value = true;
 
         const params: FormState = {
-          username,
+          name: name,
           password,
         };
 
         try {
-          const { code, message: msg } = await userStore.login(params);
-          message.destroyAll();
+          const { message } = await userStore.login(params);
+          resultMessage.destroyAll();
           if (code == ResultEnum.SUCCESS) {
             const toPath = decodeURIComponent((route.query?.redirect || '/') as string);
-            message.success('登录成功，即将进入系统');
+            resultMessage.success('登录成功，即将进入系统');
             if (route.name === LOGIN_NAME) {
               router.replace('/');
             } else router.replace(toPath);
           } else {
-            message.info(msg || '登录失败');
+            resultMessage.info(msg || '登录失败');
           }
         } finally {
           loading.value = false;
         }
       } else {
-        message.error('请填写完整信息');
+        resultMessage.error('请填写完整信息');
       }
     });
   };

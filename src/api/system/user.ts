@@ -1,9 +1,8 @@
 import { http } from '@/utils/http/axios';
 
 export interface BasicResponseModel<T = any> {
-  code: number;
+  status: boolean;
   message: string;
-  result: T;
 }
 
 export interface BasicPageParams {
@@ -39,12 +38,12 @@ export function login(params) {
 }
 
 /**
- * @description: 用户修改密码
+ * @description: 用户注册
  */
-export function changePassword(params, uid) {
-  return http.request(
+export function register(params) {
+  return http.request<BasicResponseModel>(
     {
-      url: `/user/u${uid}/changepw`,
+      url: '/register',
       method: 'POST',
       params,
     },

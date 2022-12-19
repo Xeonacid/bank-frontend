@@ -10,7 +10,7 @@ const BalanceInfo = {
 export default [
   //主控台 卡片数据
   {
-    url: '/api/balance',
+    url: '/balance',
     timeout: 1000,
     method: 'get',
     response: () => {

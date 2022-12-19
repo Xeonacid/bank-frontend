@@ -1,26 +1,31 @@
 import { defineStore } from 'pinia';
 import { store } from '@/store';
 import { ACCESS_TOKEN, CURRENT_USER } from '@/store/mutation-types';
-import { ResultEnum } from '@/enums/httpEnum';
 
-import { getUserInfo, login } from '@/api/system/user';
+import { getUserInfo, login, register } from '@/api/system/user';
 import { storage } from '@/utils/Storage';
 
 export interface IUserState {
   token: string;
-  username: string;
-  welcome: string;
+  name: string;
   avatar: string;
   permissions: any[];
   info: any;
+}
+
+export interface RegisterFormState {
+  id: string;
+  name: string;
+  pubKey: string;
+  signature: string;
+  timestamp: number;
 }
 
 export const useUserStore = defineStore({
   id: 'app-user',
   state: (): IUserState => ({
     token: storage.get(ACCESS_TOKEN, ''),
-    username: '',
-    welcome: '',
+    name: '',
     avatar: '',
     permissions: [],
     info: storage.get(CURRENT_USER, {}),
@@ -33,7 +38,7 @@ export const useUserStore = defineStore({
       return this.avatar;
     },
     getNickname(): string {
-      return this.username;
+      return this.name;
     },
     getPermissions(): [any][] {
       return this.permissions;
@@ -59,14 +64,29 @@ export const useUserStore = defineStore({
     async login(userInfo) {
       try {
         const response = await login(userInfo);
-        const { result, code } = response;
-        if (code === ResultEnum.SUCCESS) {
-          const ex = 7 * 24 * 60 * 60;
-          storage.set(ACCESS_TOKEN, result.token, ex);
-          storage.set(CURRENT_USER, result, ex);
-          this.setToken(result.token);
-          this.setUserInfo(result);
-        }
+        const { message } = response;
+        const ex = 7 * 24 * 60 * 60;
+        storage.set(ACCESS_TOKEN, message.token, ex);
+        storage.set(CURRENT_USER, message, ex);
+        this.setToken(message.token);
+        this.setUserInfo(message);
+
+        return Promise.resolve(response);
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    },
+
+    // 注册
+    async register(registerForm: RegisterFormState) {
+      try {
+        const response = await register(registerForm);
+        const ex = 7 * 24 * 60 * 60;
+        // TODO access token
+        storage.set(ACCESS_TOKEN, registerForm.id, ex);
+        storage.set(CURRENT_USER, registerForm.id, ex);
+        this.setToken(registerForm.id);
+        this.setUserInfo(registerForm.id);
         return Promise.resolve(response);
       } catch (e) {
         return Promise.reject(e);
