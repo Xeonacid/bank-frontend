@@ -49,7 +49,7 @@ export const generateKey = async () => {
   return await crypto.subtle.generateKey(
     {
       name: 'ECDSA',
-      namedCurve: 'P-384',
+      namedCurve: 'P-256',
     },
     true,
     ['sign', 'verify']

@@ -16,8 +16,8 @@
           :model="formInline"
           :rules="rules"
         >
-          <n-form-item path="name">
-            <n-input v-model:value="formInline.name" placeholder="请输入姓名">
+          <n-form-item path="id">
+            <n-input v-model:value="formInline.id" placeholder="请输入卡号">
               <template #prefix>
                 <n-icon size="18" color="#808695">
                   <PersonOutline />
@@ -25,16 +25,50 @@
               </template>
             </n-input>
           </n-form-item>
-          <n-form-item path="password">
+          <n-form-item path="privKey">
             <n-input
-              v-model:value="formInline.password"
-              type="password"
-              showPasswordOn="click"
-              placeholder="请输入密码"
+              v-model:value="formInline.privKey"
+              placeholder="你的私钥，PKCS#8格式&#10;（仅在前端使用，不会发送到服务器，请放心填写）"
+              type="textarea"
+              :autosize="{
+                minRows: 5,
+                maxRows: 10,
+              }"
             >
               <template #prefix>
                 <n-icon size="18" color="#808695">
-                  <LockClosedOutline />
+                  <KeyOutline />
+                </n-icon>
+              </template>
+            </n-input>
+          </n-form-item>
+          <n-form-item path="signature">
+            <n-input
+              v-model:value="formInline.signature"
+              placeholder="签名（填写私钥后会自动生成）"
+              type="textarea"
+              :autosize="{
+                minRows: 3,
+                maxRows: 5,
+              }"
+              :disabled="signatureTimestampDisabled"
+            >
+              <template #prefix>
+                <n-icon size="18" color="#808695">
+                  <CheckmarkOutline />
+                </n-icon>
+              </template>
+            </n-input>
+          </n-form-item>
+          <n-form-item path="timestamp">
+            <n-input
+              v-model:value="formInline.timestamp"
+              placeholder="时间戳"
+              :disabled="signatureTimestampDisabled"
+            >
+              <template #prefix>
+                <n-icon size="18" color="#808695">
+                  <TimeOutline />
                 </n-icon>
               </template>
             </n-input>
@@ -58,18 +92,22 @@
 </template>
 
 <script lang="ts" setup>
-  import { reactive, ref } from 'vue';
+  import { reactive, ref, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import { useUserStore } from '@/store/modules/user';
-  import { FormRules, useMessage } from 'naive-ui';
-  import { ResultEnum } from '@/enums/httpEnum';
-  import { PersonOutline, LockClosedOutline } from '@vicons/ionicons5';
+  import { LoginFormState, useUserStore } from '@/store/modules/user';
+  import { FormItemRule, FormRules, useMessage } from 'naive-ui';
+  import { PersonOutline, CheckmarkOutline, KeyOutline } from '@vicons/ionicons5';
   import { PageEnum } from '@/enums/pageEnum';
   import { websiteConfig } from '@/config/website.config';
-  interface FormState {
-    name: string;
-    password: string;
-  }
+  import {
+    getPubKey,
+    idToCAUid,
+    importPrivKey,
+    pemFooter,
+    pemHeader,
+    validatePrivKey,
+  } from '@/utils/ca';
+  import { ab2str, str2ab } from '@/utils';
 
   const formRef = ref();
   const resultMessage = useMessage();
@@ -77,14 +115,86 @@
   const LOGIN_NAME = PageEnum.BASE_LOGIN_NAME;
 
   const formInline = reactive({
-    name: 'admin',
-    password: '123456',
+    id: '',
+    privKey: '',
+    pubKey: '',
+    signature: '',
+    timestamp: '',
   });
 
+  const signatureTimestampDisabled = ref(false);
+
   const rules: FormRules = {
-    name: { required: true, message: '请输入姓名', trigger: 'blur' },
-    password: { required: true, message: '请输入密码', trigger: 'blur' },
+    id: { required: true, message: '请输入你想要的卡号', trigger: 'blur' },
+    privKey: [
+      {
+        required: true,
+        message: '请输入私钥',
+        trigger: 'blur',
+      },
+      {
+        validator: (rule: FormItemRule, value: string) => {
+          return validatePrivKey(value);
+        },
+        message: '不是合法的PKCS#8格式私钥',
+        trigger: ['input', 'blur'],
+      },
+    ],
   };
+
+  async function calcSignature(privKey: CryptoKey): Promise<string> {
+    const pubKey = await getPubKey(privKey);
+    const exported = await crypto.subtle.exportKey('spki', pubKey);
+    const exportedAsBase64 = btoa(ab2str(exported));
+    const pemExported = `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`;
+    formInline.pubKey = pemExported;
+
+    const msg = str2ab(
+      `${formInline.timestamp}||${idToCAUid(formInline.id)}||${pemExported}||POST:/login`
+    );
+    console.log(ab2str(msg));
+    const signature = await crypto.subtle.sign(
+      {
+        name: 'ECDSA',
+        hash: { name: 'SHA-256' },
+      },
+      privKey,
+      msg
+    );
+    return btoa(ab2str(signature));
+  }
+
+  async function fulfillSignature() {
+    const pem = formInline.privKey;
+    if (formInline.id === '' || !validatePrivKey(pem)) {
+      return;
+    }
+
+    // fetch the part of the PEM string between header and footer
+    const pemContents = pem.substring(pemHeader.length, pem.length - pemFooter.length);
+    const privKey = await importPrivKey(pemContents);
+    console.log(privKey);
+
+    const timestamp = new Date().getTime();
+    formInline.timestamp = timestamp.toString();
+    const signature = await calcSignature(privKey);
+    formInline.signature = signature;
+    signatureTimestampDisabled.value = true;
+  }
+
+  watch(
+    () => formInline.privKey,
+    () => {
+      fulfillSignature();
+    }
+  );
+
+  watch(
+    () => formInline.id,
+    () => {
+      fulfillSignature();
+    }
+  );
 
   const userStore = useUserStore();
 
@@ -95,27 +205,31 @@
     e.preventDefault();
     formRef.value.validate(async (errors) => {
       if (!errors) {
-        const { name, password } = formInline;
+        const { id, pubKey, signature, timestamp } = formInline;
         resultMessage.loading('登录中...');
-        loading.value = true;
+        loading.value = false;
 
-        const params: FormState = {
-          name: name,
-          password,
+        const params: LoginFormState = {
+          id,
+          pubKey,
+          signature,
+          timestamp: parseInt(timestamp),
         };
 
         try {
-          const { message } = await userStore.login(params);
-          resultMessage.destroyAll();
-          if (code == ResultEnum.SUCCESS) {
-            const toPath = decodeURIComponent((route.query?.redirect || '/') as string);
-            resultMessage.success('登录成功，即将进入系统');
-            if (route.name === LOGIN_NAME) {
-              router.replace('/');
-            } else router.replace(toPath);
-          } else {
-            resultMessage.info(msg || '登录失败');
-          }
+          userStore
+            .login(params)
+            .then(({ message }) => {
+              resultMessage.destroyAll();
+              const toPath = decodeURIComponent((route.query?.redirect || '/') as string);
+              resultMessage.success('登录成功，即将进入系统');
+              if (route.name === LOGIN_NAME) {
+                router.replace('/');
+              } else router.replace(toPath);
+            })
+            .catch(() => {
+              resultMessage.info('注册失败');
+            });
         } finally {
           loading.value = false;
         }

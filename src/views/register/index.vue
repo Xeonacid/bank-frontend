@@ -162,7 +162,7 @@
   async function calcSignature(privKey: CryptoKey): Promise<string> {
     const pubKey = await getPubKey(privKey);
     const exported = await crypto.subtle.exportKey('spki', pubKey);
-    const exportedAsBase64 = window.btoa(ab2str(exported));
+    const exportedAsBase64 = btoa(ab2str(exported));
     const pemExported = `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`;
     formInline.pubKey = pemExported;
 

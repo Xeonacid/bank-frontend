@@ -13,6 +13,13 @@ export interface IUserState {
   info: any;
 }
 
+export interface LoginFormState {
+  id: string;
+  pubKey: string;
+  signature: string;
+  timestamp: number;
+}
+
 export interface RegisterFormState {
   id: string;
   name: string;
@@ -61,16 +68,15 @@ export const useUserStore = defineStore({
       this.info = info;
     },
     // 登录
-    async login(userInfo) {
+    async login(loginForm: LoginFormState) {
       try {
-        const response = await login(userInfo);
-        const { message } = response;
+        const response = await login(loginForm);
         const ex = 7 * 24 * 60 * 60;
-        storage.set(ACCESS_TOKEN, message.token, ex);
-        storage.set(CURRENT_USER, message, ex);
-        this.setToken(message.token);
-        this.setUserInfo(message);
-
+        // TODO access token
+        storage.set(ACCESS_TOKEN, loginForm.id, ex);
+        storage.set(CURRENT_USER, loginForm.id, ex);
+        this.setToken(loginForm.id);
+        this.setUserInfo(loginForm.id);
         return Promise.resolve(response);
       } catch (e) {
         return Promise.reject(e);
