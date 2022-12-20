@@ -99,14 +99,7 @@
   import { PersonOutline, CheckmarkOutline, KeyOutline } from '@vicons/ionicons5';
   import { PageEnum } from '@/enums/pageEnum';
   import { websiteConfig } from '@/config/website.config';
-  import {
-    getPubKey,
-    idToCAUid,
-    importPrivKey,
-    pemFooter,
-    pemHeader,
-    validatePrivKey,
-  } from '@/utils/ca';
+  import { idToCAUid, importPrivKey, pemFooter, pemHeader, validatePrivKey } from '@/utils/ca';
   import { ab2str, str2ab } from '@/utils';
 
   const formRef = ref();
@@ -117,7 +110,6 @@
   const formInline = reactive({
     id: '',
     privKey: '',
-    pubKey: '',
     signature: '',
     timestamp: '',
   });
@@ -125,7 +117,7 @@
   const signatureTimestampDisabled = ref(false);
 
   const rules: FormRules = {
-    id: { required: true, message: '请输入你想要的卡号', trigger: 'blur' },
+    id: { required: true, message: '请输入你的卡号', trigger: 'blur' },
     privKey: [
       {
         required: true,
@@ -143,15 +135,7 @@
   };
 
   async function calcSignature(privKey: CryptoKey): Promise<string> {
-    const pubKey = await getPubKey(privKey);
-    const exported = await crypto.subtle.exportKey('spki', pubKey);
-    const exportedAsBase64 = btoa(ab2str(exported));
-    const pemExported = `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`;
-    formInline.pubKey = pemExported;
-
-    const msg = str2ab(
-      `${formInline.timestamp}||${idToCAUid(formInline.id)}||${pemExported}||POST:/login`
-    );
+    const msg = str2ab(`${formInline.timestamp}||${idToCAUid(formInline.id)}||POST:/login`);
     console.log(ab2str(msg));
     const signature = await crypto.subtle.sign(
       {
@@ -173,7 +157,6 @@
     // fetch the part of the PEM string between header and footer
     const pemContents = pem.substring(pemHeader.length, pem.length - pemFooter.length);
     const privKey = await importPrivKey(pemContents);
-    console.log(privKey);
 
     const timestamp = new Date().getTime();
     formInline.timestamp = timestamp.toString();
@@ -205,13 +188,12 @@
     e.preventDefault();
     formRef.value.validate(async (errors) => {
       if (!errors) {
-        const { id, pubKey, signature, timestamp } = formInline;
+        const { id, signature, timestamp } = formInline;
         resultMessage.loading('登录中...');
         loading.value = false;
 
         const params: LoginFormState = {
           id,
-          pubKey,
           signature,
           timestamp: parseInt(timestamp),
         };

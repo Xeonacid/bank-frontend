@@ -15,7 +15,6 @@ export interface IUserState {
 
 export interface LoginFormState {
   id: string;
-  pubKey: string;
   signature: string;
   timestamp: number;
 }
@@ -23,9 +22,7 @@ export interface LoginFormState {
 export interface RegisterFormState {
   id: string;
   name: string;
-  pubKey: string;
-  signature: string;
-  timestamp: number;
+  cert: string;
 }
 
 export const useUserStore = defineStore({
@@ -97,29 +94,6 @@ export const useUserStore = defineStore({
       } catch (e) {
         return Promise.reject(e);
       }
-    },
-
-    // 获取用户信息
-    GetInfo() {
-      const that = this;
-      return new Promise((resolve, reject) => {
-        getUserInfo()
-          .then((res) => {
-            const result = res;
-            if (result.permissions && result.permissions.length) {
-              const permissionsList = result.permissions;
-              that.setPermissions(permissionsList);
-              that.setUserInfo(result);
-            } else {
-              reject(new Error('getInfo: permissionsList must be a non-null array !'));
-            }
-            that.setAvatar(result.avatar);
-            resolve(res);
-          })
-          .catch((error) => {
-            reject(error);
-          });
-      });
     },
 
     // 登出

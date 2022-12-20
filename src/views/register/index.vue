@@ -8,6 +8,10 @@
         </div>
         <div class="view-account-top-desc">{{ websiteConfig.loginDesc }}</div>
       </div>
+      <n-alert title="在注册之前" type="info"
+        >请去CA网站申请证书，将密钥对与卡号绑定 <br />（CA UID请设置为 "BANK_卡号"）</n-alert
+      >
+      <br />
       <div class="view-account-form">
         <n-form
           ref="formRef"
@@ -26,7 +30,7 @@
             </n-input>
           </n-form-item>
           <n-form-item path="id">
-            <n-input v-model:value="formInline.id" maxlength="20" placeholder="你想要的卡号">
+            <n-input v-model:value="formInline.id" maxlength="20" placeholder="你的卡号">
               <template #prefix>
                 <n-icon size="18" color="#808695">
                   <WalletOutline />
@@ -34,10 +38,10 @@
               </template>
             </n-input>
           </n-form-item>
-          <n-form-item path="privKey">
+          <n-form-item path="cert">
             <n-input
-              v-model:value="formInline.privKey"
-              placeholder="你的私钥，PKCS#8格式&#10;（仅在前端使用，不会发送到服务器，请放心填写）"
+              v-model:value="formInline.cert"
+              placeholder="你从CA获取到的证书"
               type="textarea"
               :autosize="{
                 minRows: 5,
@@ -47,37 +51,6 @@
               <template #prefix>
                 <n-icon size="18" color="#808695">
                   <KeyOutline />
-                </n-icon>
-              </template>
-            </n-input>
-          </n-form-item>
-          <n-form-item path="signature">
-            <n-input
-              v-model:value="formInline.signature"
-              placeholder="签名（填写私钥后会自动生成）"
-              type="textarea"
-              :autosize="{
-                minRows: 3,
-                maxRows: 5,
-              }"
-              :disabled="signatureTimestampDisabled"
-            >
-              <template #prefix>
-                <n-icon size="18" color="#808695">
-                  <CheckmarkOutline />
-                </n-icon>
-              </template>
-            </n-input>
-          </n-form-item>
-          <n-form-item path="timestamp">
-            <n-input
-              v-model:value="formInline.timestamp"
-              placeholder="时间戳"
-              :disabled="signatureTimestampDisabled"
-            >
-              <template #prefix>
-                <n-icon size="18" color="#808695">
-                  <TimeOutline />
                 </n-icon>
               </template>
             </n-input>
@@ -101,28 +74,13 @@
 </template>
 
 <script lang="ts" setup>
-  import { reactive, ref, watch } from 'vue';
+  import { reactive, ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { RegisterFormState, useUserStore } from '@/store/modules/user';
   import { useMessage, FormRules, FormItemRule } from 'naive-ui';
-  import {
-    PersonOutline,
-    KeyOutline,
-    WalletOutline,
-    CheckmarkOutline,
-    TimeOutline,
-  } from '@vicons/ionicons5';
+  import { PersonOutline, KeyOutline, WalletOutline } from '@vicons/ionicons5';
   import { PageEnum } from '@/enums/pageEnum';
   import { websiteConfig } from '@/config/website.config';
-  import { str2ab, ab2str } from '@/utils/index';
-  import {
-    idToCAUid,
-    importPrivKey,
-    getPubKey,
-    pemHeader,
-    pemFooter,
-    validatePrivKey,
-  } from '@/utils/ca';
 
   const formRef = ref();
   const resultMessage = useMessage();
@@ -132,86 +90,32 @@
   const formInline = reactive({
     id: '',
     name: '',
-    privKey: '',
-    pubKey: '',
-    signature: '',
-    timestamp: '',
+    cert: '',
   });
-
-  const signatureTimestampDisabled = ref(false);
 
   const rules: FormRules = {
     name: { required: true, message: '请输入姓名', trigger: 'blur' },
-    id: { required: true, message: '请输入你想要的卡号', trigger: 'blur' },
-    privKey: [
+    id: { required: true, message: '请输入你的卡号', trigger: 'blur' },
+    cert: [
       {
         required: true,
-        message: '请输入私钥',
+        message: '请输入证书',
         trigger: 'blur',
       },
       {
         validator: (rule: FormItemRule, value: string) => {
-          return validatePrivKey(value);
+          const pemHeader = '-----BEGIN CERTIFICATE-----\n';
+          const pemFooter = '\n-----END CERTIFICATE-----';
+          if (value.indexOf(pemHeader) === -1 || value.indexOf(pemFooter) === -1) {
+            return false;
+          }
+          return true;
         },
-        message: '不是合法的PKCS#8格式私钥',
+        message: '不是合法的证书',
         trigger: ['input', 'blur'],
       },
     ],
   };
-
-  async function calcSignature(privKey: CryptoKey): Promise<string> {
-    const pubKey = await getPubKey(privKey);
-    const exported = await crypto.subtle.exportKey('spki', pubKey);
-    const exportedAsBase64 = btoa(ab2str(exported));
-    const pemExported = `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`;
-    formInline.pubKey = pemExported;
-
-    const msg = str2ab(
-      `${formInline.timestamp}||${idToCAUid(formInline.id)}||${pemExported}||POST:/user`
-    );
-    console.log(ab2str(msg));
-    const signature = await crypto.subtle.sign(
-      {
-        name: 'ECDSA',
-        hash: { name: 'SHA-256' },
-      },
-      privKey,
-      msg
-    );
-    return btoa(ab2str(signature));
-  }
-
-  async function fulfillSignature() {
-    const pem = formInline.privKey;
-    if (formInline.id === '' || !validatePrivKey(pem)) {
-      return;
-    }
-
-    // fetch the part of the PEM string between header and footer
-    const pemContents = pem.substring(pemHeader.length, pem.length - pemFooter.length);
-    const privKey = await importPrivKey(pemContents);
-    console.log(privKey);
-
-    const timestamp = new Date().getTime();
-    formInline.timestamp = timestamp.toString();
-    const signature = await calcSignature(privKey);
-    formInline.signature = signature;
-    signatureTimestampDisabled.value = true;
-  }
-
-  watch(
-    () => formInline.privKey,
-    () => {
-      fulfillSignature();
-    }
-  );
-
-  watch(
-    () => formInline.id,
-    () => {
-      fulfillSignature();
-    }
-  );
 
   const userStore = useUserStore();
 
@@ -222,16 +126,14 @@
     e.preventDefault();
     formRef.value.validate(async (errors) => {
       if (!errors) {
-        const { id, name, pubKey, signature, timestamp } = formInline;
+        const { id, name, cert } = formInline;
         resultMessage.loading('注册中...');
         loading.value = false;
 
         const params: RegisterFormState = {
           id,
           name,
-          pubKey,
-          signature,
-          timestamp: parseInt(timestamp),
+          cert,
         };
 
         try {
