@@ -1,9 +1,9 @@
 import { http } from '@/utils/http/axios';
 
 //获取余额信息
-export function getBalanceInfo() {
+export function getBalanceInfo(id: string) {
   return http.request({
-    url: '/balance',
+    url: `/balance?id=${id}`,
     method: 'get',
   });
 }

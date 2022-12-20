@@ -105,7 +105,6 @@
   import { useRoute, useRouter } from 'vue-router';
   import { RegisterFormState, useUserStore } from '@/store/modules/user';
   import { useMessage, FormRules, FormItemRule } from 'naive-ui';
-  import { ResultEnum } from '@/enums/httpEnum';
   import {
     PersonOutline,
     KeyOutline,
