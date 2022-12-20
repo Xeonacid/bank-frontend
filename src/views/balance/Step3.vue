@@ -5,18 +5,19 @@
         <div class="information">
           <n-grid cols="2 s:2 m:3 l:3 xl:3 2xl:3" responsive="screen" class="my-1">
             <n-gi>交易类型：</n-gi>
-            <n-gi>存款</n-gi>
+            <n-gi>{{ balanceStore.getBalanceUpdateType }}</n-gi>
           </n-grid>
           <n-grid cols="2 s:2 m:3 l:3 xl:3 2xl:3" responsive="screen" class="my-1">
             <n-gi>交易金额：</n-gi>
-            <n-gi>￥<span class="money">1980</span> 元</n-gi>
+            <n-gi
+              >￥<span class="money">{{ balanceStore.getAmount }}</span> 元</n-gi
+            >
           </n-grid>
         </div>
       </template>
       <template #footer>
         <div class="flex justify-center">
-          <n-button type="primary" @click="finish" class="mr-4">再转一笔</n-button>
-          <n-button @click="prevStep">查看账单</n-button>
+          <n-button type="primary" @click="finish" class="mr-4">再搞一笔</n-button>
         </div>
       </template>
     </n-result>
@@ -25,11 +26,11 @@
 
 <script lang="ts" setup>
   import { defineEmits } from 'vue';
+  import { useBalanceStore } from '@/store/modules/balance';
+
+  const balanceStore = useBalanceStore();
 
   const emit = defineEmits(['finish', 'prevStep']);
-  function prevStep() {
-    emit('prevStep');
-  }
 
   function finish() {
     emit('finish');

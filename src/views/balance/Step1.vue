@@ -7,16 +7,16 @@
     ref="form1Ref"
     style="max-width: 500px; margin: 40px auto 0 80px"
   >
-    <n-form-item label="交易类型" path="type">
-      <n-radio-group v-model:value="formValue.type" name="type">
+    <n-form-item label="交易类型" path="balanceUpdateType">
+      <n-radio-group v-model:value="formValue.balanceUpdateType" name="balanceUpdateType">
         <n-space>
-          <n-radio value="withdraw">存款</n-radio>
-          <n-radio value="deposit">取款</n-radio>
+          <n-radio :value="BalanceUpdateTypeEnum.WITHDRAW">存款</n-radio>
+          <n-radio :value="BalanceUpdateTypeEnum.DEPOSIT">取款</n-radio>
         </n-space>
       </n-radio-group>
     </n-form-item>
-    <n-form-item label="金额" path="money">
-      <n-input placeholder="请输入交易金额" v-model:value="formValue.money">
+    <n-form-item label="金额" path="amount">
+      <n-input placeholder="请输入交易金额" v-model:value="formValue.amount">
         <template #prefix>
           <span class="text-gray-400">￥</span>
         </template>
@@ -33,6 +33,8 @@
 <script lang="ts" setup>
   import { ref, defineEmits } from 'vue';
   import { useMessage } from 'naive-ui';
+  import { useBalanceStore } from '@/store/modules/balance';
+  import { BalanceUpdateTypeEnum } from '@/enums/balanceEnum';
 
   const emit = defineEmits(['nextStep']);
 
@@ -40,26 +42,30 @@
   const message = useMessage();
 
   const formValue = ref({
-    type: 'withdraw',
-    money: '',
+    balanceUpdateType: BalanceUpdateTypeEnum.WITHDRAW,
+    amount: '',
   });
 
   const rules = {
-    type: {
+    balanceUpdateType: {
       required: true,
       message: '请选择交易类型',
       trigger: 'blur',
     },
-    money: {
+    amount: {
       required: true,
       message: '请输入交易金额',
       trigger: 'blur',
     },
   };
 
+  const balanceStore = useBalanceStore();
+
   function formSubmit() {
     form1Ref.value.validate((errors) => {
       if (!errors) {
+        balanceStore.setBalanceUpdateType(formValue.value.balanceUpdateType);
+        balanceStore.setAmount(formValue.value.amount);
         emit('nextStep');
       } else {
         message.error('验证失败，请填写完整信息');
