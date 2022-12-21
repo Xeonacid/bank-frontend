@@ -42,10 +42,24 @@
               </template>
             </n-input>
           </n-form-item>
+          <n-form-item path="password">
+            <n-input
+              v-model:value="formInline.password"
+              type="password"
+              showPasswordOn="click"
+              placeholder="私钥密码"
+            >
+              <template #prefix>
+                <n-icon size="18" color="#808695">
+                  <LockClosedOutline />
+                </n-icon>
+              </template>
+            </n-input>
+          </n-form-item>
           <n-form-item path="signature">
             <n-input
               v-model:value="formInline.signature"
-              placeholder="签名（填写私钥后会自动生成）"
+              placeholder="签名，填写私钥和私钥密码后会自动生成"
               type="textarea"
               :autosize="{
                 minRows: 3,
@@ -96,7 +110,13 @@
   import { useRoute, useRouter } from 'vue-router';
   import { LoginFormState, useUserStore } from '@/store/modules/user';
   import { FormItemRule, FormRules, useMessage } from 'naive-ui';
-  import { PersonOutline, CheckmarkOutline, KeyOutline } from '@vicons/ionicons5';
+  import {
+    PersonOutline,
+    CheckmarkOutline,
+    KeyOutline,
+    LockClosedOutline,
+    TimeOutline,
+  } from '@vicons/ionicons5';
   import { PageEnum } from '@/enums/pageEnum';
   import { websiteConfig } from '@/config/website.config';
   import { idToCAUid, importPrivKey, pemFooter, pemHeader, validatePrivKey } from '@/utils/ca';
@@ -110,6 +130,7 @@
   const formInline = reactive({
     id: '',
     privKey: '',
+    password: '',
     signature: '',
     timestamp: '',
   });
@@ -118,6 +139,7 @@
 
   const rules: FormRules = {
     id: { required: true, message: '请输入你的卡号', trigger: 'blur' },
+    password: { required: true, message: '请输入私钥密码', trigger: 'blur' },
     privKey: [
       {
         required: true,
@@ -149,31 +171,30 @@
   }
 
   async function fulfillSignature() {
-    const pem = formInline.privKey;
-    if (formInline.id === '' || !validatePrivKey(pem)) {
+    const pem = formInline.privKey,
+      password = formInline.password;
+    if (formInline.id === '' || password == '' || !validatePrivKey(pem)) {
       return;
     }
 
     // fetch the part of the PEM string between header and footer
     const pemContents = pem.substring(pemHeader.length, pem.length - pemFooter.length);
-    const privKey = await importPrivKey(pemContents);
-
-    const timestamp = new Date().getTime();
-    formInline.timestamp = timestamp.toString();
-    const signature = await calcSignature(privKey);
-    formInline.signature = signature;
-    signatureTimestampDisabled.value = true;
+    importPrivKey(pemContents, password).then(
+      async (privKey) => {
+        const timestamp = Date.now();
+        formInline.timestamp = timestamp.toString();
+        const signature = await calcSignature(privKey);
+        formInline.signature = signature;
+        signatureTimestampDisabled.value = true;
+      },
+      () => {
+        return;
+      }
+    );
   }
 
   watch(
-    () => formInline.privKey,
-    () => {
-      fulfillSignature();
-    }
-  );
-
-  watch(
-    () => formInline.id,
+    () => [formInline.privKey, formInline.id, formInline.password],
     () => {
       fulfillSignature();
     }

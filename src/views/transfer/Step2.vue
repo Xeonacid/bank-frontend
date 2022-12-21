@@ -8,7 +8,7 @@
     style="max-width: 500px; margin: 40px auto 0 80px"
   >
     <n-form-item label="收款账户" path="account">
-      <span>{{ transferStore.to_id }}</span>
+      <span>{{ transferStore.getTo_id }}</span>
     </n-form-item>
     <n-form-item label="转账金额" path="money">
       <span>￥{{ transferStore.getAmount }} 元</span>
@@ -25,15 +25,30 @@
         }"
       />
     </n-form-item>
+    <n-form-item label="私钥密码" path="password">
+      <n-input
+        v-model:value="formValue.password"
+        type="password"
+        showPasswordOn="click"
+        placeholder="私钥密码"
+      />
+    </n-form-item>
     <n-form-item label="签名" path="signature">
       <n-input
         v-model:value="formValue.signature"
-        placeholder="签名（填写私钥后会自动生成）"
+        placeholder="签名，填写私钥和私钥密码后会自动生成"
         type="textarea"
         :autosize="{
           minRows: 3,
           maxRows: 5,
         }"
+        :disabled="signatureTimestampDisabled"
+      />
+    </n-form-item>
+    <n-form-item label="时间戳" path="timestamp">
+      <n-input
+        v-model:value="formValue.timestamp"
+        placeholder="时间戳"
         :disabled="signatureTimestampDisabled"
       />
     </n-form-item>
@@ -47,23 +62,26 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, defineEmits, watch } from 'vue';
+  import { ref, defineEmits, watch, reactive } from 'vue';
   import { FormItemRule, FormRules, useMessage } from 'naive-ui';
   import { useTransferStore } from '@/store/modules/transfer';
-  import { idToCAUid, importPrivKey, pemFooter, pemHeader, validatePrivKey } from '@/utils/ca';
+  import { importPrivKey, pemFooter, pemHeader, validatePrivKey } from '@/utils/ca';
   import { ab2str, str2ab } from '@/utils';
   const form2Ref: any = ref(null);
   const message = useMessage();
   const loading = ref(false);
 
-  const formValue = ref({
+  const formValue = reactive({
     privKey: '',
+    password: '',
     signature: '',
+    timestamp: '',
   });
 
   const signatureTimestampDisabled = ref(false);
 
   const rules: FormRules = {
+    password: { required: true, message: '请输入私钥密码', trigger: 'blur' },
     privKey: [
       {
         required: true,
@@ -84,7 +102,9 @@
 
   async function calcSignature(privKey: CryptoKey): Promise<string> {
     const msg = str2ab(
-      `${transferStore.getFrom_id}||${transferStore.getTo_id}||${transferStore.getAmount}||${transferStore.getComment}`
+      `${transferStore.getFrom_id}||${transferStore.getTo_id}||${transferStore.getAmount}||${
+        transferStore.getComment
+      }||${transferStore.getTimestamp.toString()}`
     );
     console.log(ab2str(msg));
     const signature = await crypto.subtle.sign(
@@ -99,23 +119,32 @@
   }
 
   async function fulfillSignature() {
-    const pem = formValue.value.privKey;
-    if (!validatePrivKey(pem)) {
+    const pem = formValue.privKey,
+      password = formValue.password;
+    if (formValue.password == '' || !validatePrivKey(pem)) {
       return;
     }
 
     // fetch the part of the PEM string between header and footer
     const pemContents = pem.substring(pemHeader.length, pem.length - pemFooter.length);
-    const privKey = await importPrivKey(pemContents);
-
-    const signature = await calcSignature(privKey);
-    formValue.value.signature = signature;
-    transferStore.setSignature(signature);
-    signatureTimestampDisabled.value = true;
+    importPrivKey(pemContents, password).then(
+      async (privKey) => {
+        const timestamp = Date.now();
+        formValue.timestamp = timestamp.toString();
+        transferStore.setTimestamp(timestamp);
+        const signature = await calcSignature(privKey);
+        formValue.signature = signature;
+        transferStore.setSignature(signature);
+        signatureTimestampDisabled.value = true;
+      },
+      () => {
+        return;
+      }
+    );
   }
 
   watch(
-    () => formValue.value.privKey,
+    () => [formValue.privKey, formValue.password],
     () => {
       fulfillSignature();
     }

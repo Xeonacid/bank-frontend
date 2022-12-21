@@ -6,6 +6,7 @@ export interface TransferState {
   to_id: string;
   amount: string;
   comment: string;
+  timestamp: number;
   signature: string;
 }
 
@@ -16,6 +17,7 @@ export const useTransferStore = defineStore({
     to_id: '',
     amount: '0',
     comment: '',
+    timestamp: 0,
     signature: '',
   }),
   getters: {
@@ -30,6 +32,9 @@ export const useTransferStore = defineStore({
     },
     getComment(): string {
       return this.comment;
+    },
+    getTimestamp(): number {
+      return this.timestamp;
     },
     getSignature(): string {
       return this.signature;
@@ -48,6 +53,9 @@ export const useTransferStore = defineStore({
     setComment(comment: string) {
       this.comment = comment;
     },
+    setTimestamp(timestamp: number) {
+      this.timestamp = timestamp;
+    },
     setSignature(signature: string) {
       this.signature = signature;
     },
@@ -59,6 +67,7 @@ export const useTransferStore = defineStore({
             to_id: this.to_id,
             amount: this.amount,
             comment: this.comment,
+            timestamp: this.timestamp,
           },
           signature: this.signature,
         });
