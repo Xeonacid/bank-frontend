@@ -59,6 +59,8 @@ export function createRouterGuards(router: Router) {
 
     const routes = await asyncRouteStore.generateRoutes();
 
+    console.log(routes);
+
     // 动态添加可访问路由表
     routes.forEach((item) => {
       router.addRoute(item as unknown as RouteRecordRaw);

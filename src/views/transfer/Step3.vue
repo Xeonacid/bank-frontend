@@ -5,22 +5,19 @@
         <div class="information">
           <n-grid cols="2 s:2 m:3 l:3 xl:3 2xl:3" responsive="screen" class="my-1">
             <n-gi>收款账户：</n-gi>
-            <n-gi>xiaoma@qq.com</n-gi>
-          </n-grid>
-          <n-grid cols="2 s:2 m:3 l:3 xl:3 2xl:3" responsive="screen" class="my-1">
-            <n-gi>收款人姓名：</n-gi>
-            <n-gi>啊俊</n-gi>
+            <n-gi>{{ transferStore.getTo_id }}</n-gi>
           </n-grid>
           <n-grid cols="2 s:2 m:3 l:3 xl:3 2xl:3" responsive="screen" class="my-1">
             <n-gi>转账金额：</n-gi>
-            <n-gi>￥<span class="money">1980</span> 元</n-gi>
+            <n-gi
+              >￥<span class="money">{{ transferStore.getAmount }}</span> 元</n-gi
+            >
           </n-grid>
         </div>
       </template>
       <template #footer>
         <div class="flex justify-center">
           <n-button type="primary" @click="finish" class="mr-4">再转一笔</n-button>
-          <n-button @click="prevStep">查看账单</n-button>
         </div>
       </template>
     </n-result>
@@ -29,11 +26,11 @@
 
 <script lang="ts" setup>
   import { defineEmits } from 'vue';
+  import { useTransferStore } from '@/store/modules/transfer';
+
+  const transferStore = useTransferStore();
 
   const emit = defineEmits(['finish', 'prevStep']);
-  function prevStep() {
-    emit('prevStep');
-  }
 
   function finish() {
     emit('finish');

@@ -9,7 +9,7 @@ const routes: Array<RouteRecordRaw> = [
     name: 'transfer',
     component: Layout,
     meta: {
-      sort: 2,
+      sort: 1,
       isRoot: true,
       activeMenu: 'transfer_index',
       icon: renderIcon(SendOutlined),

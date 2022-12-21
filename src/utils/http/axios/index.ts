@@ -176,16 +176,6 @@ const transform: AxiosTransform = {
         return;
       }
       if (err && err.includes('Network Error')) {
-        $dialog.info({
-          title: '网络异常',
-          content: '请检查您的网络连接是否正常',
-          positiveText: '确定',
-          //negativeText: '取消',
-          closable: false,
-          maskClosable: false,
-          onPositiveClick: () => {},
-          onNegativeClick: () => {},
-        });
         return Promise.reject(error);
       }
     } catch (error) {

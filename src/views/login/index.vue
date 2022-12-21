@@ -210,7 +210,7 @@
               } else router.replace(toPath);
             })
             .catch(() => {
-              resultMessage.info('注册失败');
+              resultMessage.info('登录失败');
             });
         } finally {
           loading.value = false;
