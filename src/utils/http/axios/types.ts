@@ -58,6 +58,10 @@ export interface RequestOptions {
 }
 
 export interface Result {
-  success: boolean;
-  message: string;
+  data: {
+    success: boolean;
+    message: string;
+    timestamp: number;
+  };
+  sig: string;
 }

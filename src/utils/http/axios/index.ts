@@ -4,8 +4,7 @@ import { AxiosTransform } from './axiosTransform';
 import axios, { AxiosResponse } from 'axios';
 import { checkStatus } from './checkStatus';
 import { joinTimestamp, formatRequestDate } from './helper';
-import { RequestEnum, ResultEnum, ContentTypeEnum } from '@/enums/httpEnum';
-import { PageEnum } from '@/enums/pageEnum';
+import { RequestEnum, ContentTypeEnum } from '@/enums/httpEnum';
 
 import { useGlobSetting } from '@/hooks/setting';
 
@@ -19,9 +18,6 @@ import { useUserStoreWidthOut } from '@/store/modules/user';
 
 const globSetting = useGlobSetting();
 const urlPrefix = globSetting.urlPrefix || '';
-
-import router from '@/router';
-import { storage } from '@/utils/Storage';
 
 /**
  * @description: 数据处理，方便区分多种处理方式
@@ -51,35 +47,35 @@ const transform: AxiosTransform = {
       return res.data;
     }
 
-    const { data } = res;
+    const resp = res.data;
 
     const $dialog = window['$dialog'];
     const $message = window['$message'];
 
-    if (!data) {
+    if (!resp) {
       // return '[HTTP] Request has no return value';
       throw new Error('请求出错，请稍候重试');
     }
     //  这里 code，result，message为 后台统一的字段，需要修改为项目自己的接口返回格式
-    const { success, message } = data;
+    const { data, sig } = resp;
     // 请求成功
-    const hasSuccess = data && Reflect.has(data, 'success') && success;
+    const hasSuccess = data.success;
     // 是否显示提示信息
     if (isShowMessage) {
       if (hasSuccess && (successMessageText || isShowSuccessMessage)) {
         // 是否显示自定义信息提示
         $dialog.success({
           type: 'success',
-          content: successMessageText || message || '操作成功！',
+          content: successMessageText || data.message || '操作成功！',
         });
       } else if (!hasSuccess && (errorMessageText || isShowErrorMessage)) {
         // 是否显示自定义信息提示
-        $message.error(message || errorMessageText || '操作失败！');
+        $message.error(data.message || errorMessageText || '操作失败！');
       } else if (!hasSuccess && options.errorMessageMode === 'modal') {
         // errorMessageMode=‘custom-modal’的时候会显示modal错误弹窗，而不是消息提示，用于一些比较重要的错误
         $dialog.info({
           title: '提示',
-          content: message,
+          content: data.message,
           positiveText: '确定',
           onPositiveClick: () => {},
         });
@@ -87,11 +83,11 @@ const transform: AxiosTransform = {
     }
 
     // 接口请求成功，直接返回结果
-    if (success) {
-      return message;
+    if (hasSuccess) {
+      return data.message;
     }
     // 请求失败
-    $message.error(message);
+    $message.error(data.message);
   },
 
   // 请求之前处理config
