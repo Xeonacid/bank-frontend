@@ -12,16 +12,6 @@ export interface BasicPageParams {
 }
 
 /**
- * @description: 获取用户信息
- */
-export function getUserInfo() {
-  return http.request({
-    url: '/admin_info',
-    method: 'get',
-  });
-}
-
-/**
  * @description: 用户登录
  */
 export function login(params) {
@@ -51,15 +41,4 @@ export function register(params) {
       isTransformResponse: false,
     }
   );
-}
-
-/**
- * @description: 用户登出
- */
-export function logout(params) {
-  return http.request({
-    url: '/login/logout',
-    method: 'POST',
-    params,
-  });
 }

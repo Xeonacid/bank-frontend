@@ -1,6 +1,4 @@
-import { adminMenus } from '@/api/system/menu';
 import { constantRouterIcon } from './router-icons';
-import { RouteRecordRaw } from 'vue-router';
 import { Layout, ParentLayout } from '@/router/constant';
 import type { AppRouteRecordRaw } from '@/router/types';
 
@@ -46,25 +44,6 @@ export const routerGenerator = (routerMap, parent?): any[] => {
       currentRouter.children = routerGenerator(item.children, currentRouter);
     }
     return currentRouter;
-  });
-};
-
-/**
- * 动态生成菜单
- * @returns {Promise<Router>}
- */
-export const generatorDynamicRouter = (): Promise<RouteRecordRaw[]> => {
-  return new Promise((resolve, reject) => {
-    adminMenus()
-      .then((result) => {
-        const routeList = routerGenerator(result);
-        asyncImportRoute(routeList);
-
-        resolve(routeList);
-      })
-      .catch((err) => {
-        reject(err);
-      });
   });
 };
 

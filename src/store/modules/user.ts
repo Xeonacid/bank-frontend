@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { store } from '@/store';
 import { ACCESS_TOKEN, CURRENT_USER } from '@/store/mutation-types';
 
-import { getUserInfo, login, register } from '@/api/system/user';
+import { login, register } from '@/api/system/user';
 import { storage } from '@/utils/Storage';
 
 export interface IUserState {
